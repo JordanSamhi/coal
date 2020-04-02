@@ -26,6 +26,7 @@ import org.apache.commons.cli.ParseException;
  */
 public class CommandLineArguments {
   private CommandLine commandLine;
+  private String apk;
   private String model;
   private String compiledModel;
   private String classpath;
@@ -132,6 +133,23 @@ public class CommandLineArguments {
    */
   public void setInput(String input) {
     this.input = input;
+  }
+
+  public boolean hasInput() {
+    return this.input != null;
+  }
+
+  public boolean hasApk() {
+    return this.apk != null;
+  }
+
+  // TODO documentation
+  public String getApk() {
+    return this.apk;
+  }
+
+  public void setApk(String apk) {
+    this.apk = apk;
   }
 
   /**

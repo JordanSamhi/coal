@@ -67,22 +67,27 @@ public abstract class CommandLineParser<A extends CommandLineArguments> {
       logger.error("Could not instantiate type " + clazz, e);
       return null;
     }
+
     commandLineArguments.setCommandLine(commandLine);
     commandLineArguments.setModel(commandLine.getOptionValue("model"));
     commandLineArguments.setCompiledModel(commandLine.getOptionValue("cmodel"));
-    commandLineArguments.setInput(commandLine.getOptionValue("in"));
-    commandLineArguments.setClasspath(String.format("%s:%s:", commandLine.getOptionValue("cp"),
-        commandLineArguments.getInput()));
+    if (commandLineArguments.hasOption("in")) {
+      commandLineArguments.setInput(commandLine.getOptionValue("in"));
+      commandLineArguments.setClasspath(String.format("%s:%s:", commandLine.getOptionValue("cp"),
+          commandLineArguments.getInput()));
+    } else if (commandLineArguments.hasOption("a")) {
+      commandLineArguments.setApk(commandLine.getOptionValue("a"));
+      commandLineArguments.setClasspath(commandLine.getOptionValue("cp"));
+    }
     commandLineArguments.setOutput(commandLine.getOptionValue("out"));
     commandLineArguments.setTraverseModeled(commandLine.hasOption("traversemodeled"));
     AnalysisParameters.v().setInferNonModeledTypes(!commandLine.hasOption("modeledtypesonly"));
 
     int threadCount;
     try {
-      threadCount =
-          commandLineArguments.hasOption("threadcount") ? ((Number) commandLineArguments
-              .getParsedOptionValue("threadcount")).intValue() : Runtime.getRuntime()
-              .availableProcessors();
+      threadCount = commandLineArguments.hasOption("threadcount")
+          ? ((Number) commandLineArguments.getParsedOptionValue("threadcount")).intValue()
+          : Runtime.getRuntime().availableProcessors();
     } catch (ParseException exception) {
       logger.error(
           "Could not parse thread count: " + commandLineArguments.getOptionValue("threadcount"),
@@ -123,17 +128,24 @@ public abstract class CommandLineParser<A extends CommandLineArguments> {
 
     options.addOptionGroup(modelGroup);
 
-    options.addOption(Option.builder("cp").desc("The classpath for the analysis.").hasArg()
-        .argName("classpath").required().longOpt("classpath").build());
-    options.addOption(Option.builder("in").desc("The input code for the analysis.").hasArg()
+    OptionGroup inputGroup = new OptionGroup();
+    inputGroup.addOption(Option.builder("in").desc("The input code for the analysis.").hasArg()
         .argName("input").required().longOpt("input").build());
+    inputGroup.addOption(Option.builder("a").desc("The APK for the analysis.").hasArg()
+        .argName("apk file").required().longOpt("apk").build());
+    inputGroup.setRequired(true);
+    options.addOptionGroup(inputGroup);
+
+    options.addOption(
+        Option.builder("cp").desc("The classpath for the analysis (platform directory for apk)")
+            .hasArg().argName("classpath").required().longOpt("classpath").build());
     options.addOption(Option.builder("out").desc("The output directory or file.").hasArg()
         .argName("output").longOpt("output").build());
     options.addOption(Option.builder("traversemodeled").desc("Propagate through modeled classes.")
         .hasArg(false).build());
     options.addOption("modeledtypesonly", false, "Only infer modeled types.");
-    options.addOption(Option.builder("threadcount")
-        .desc("The maximum number of threads that should be used.").hasArg()
-        .argName("thread count").type(Number.class).build());
+    options.addOption(
+        Option.builder("threadcount").desc("The maximum number of threads that should be used.")
+            .hasArg().argName("thread count").type(Number.class).build());
   }
 }

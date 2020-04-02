@@ -21,12 +21,17 @@ package edu.psu.cse.siis.coal;
 import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.psu.cse.siis.coal.arguments.ArgumentValueManager;
+import edu.psu.cse.siis.coal.arguments.MethodReturnValueManager;
+import edu.psu.cse.siis.coal.field.transformers.FieldTransformerManager;
 import soot.EntryPoints;
 import soot.PackManager;
 import soot.Scene;
@@ -34,9 +39,6 @@ import soot.SootClass;
 import soot.Transform;
 import soot.Value;
 import soot.options.Options;
-import edu.psu.cse.siis.coal.arguments.ArgumentValueManager;
-import edu.psu.cse.siis.coal.arguments.MethodReturnValueManager;
-import edu.psu.cse.siis.coal.field.transformers.FieldTransformerManager;
 
 /**
  * A default analysis, which performs constant propagation with the default method argument
@@ -71,8 +73,17 @@ public class DefaultAnalysis<A extends CommandLineArguments> extends Analysis<A>
     Options.v().set_allow_phantom_refs(true);
     Options.v().set_output_format(Options.output_format_none);
     Options.v().set_whole_program(true);
-    Options.v().set_soot_classpath(
-        commandLineArguments.getInput() + File.pathSeparator + commandLineArguments.getClasspath());
+    if (commandLineArguments.hasInput()) {
+      Options.v().set_soot_classpath(commandLineArguments.getInput() + File.pathSeparator
+          + commandLineArguments.getClasspath());
+      Options.v().set_src_prec(Options.src_prec_java);
+    } else if (commandLineArguments.hasApk()) {
+      Options.v().set_src_prec(Options.src_prec_apk);
+      Options.v().set_android_jars(commandLineArguments.getClasspath());
+      List<String> apps = new ArrayList<String>();
+      apps.add(commandLineArguments.getApk());
+      Options.v().set_process_dir(apps);
+    }
 
     Options.v().setPhaseOption("cg.spark", "on");
 
@@ -84,8 +95,6 @@ public class DefaultAnalysis<A extends CommandLineArguments> extends Analysis<A>
 
     Options.v().setPhaseOption("cg", "trim-clinit:false");
     Options.v().set_prepend_classpath(true);
-
-    Options.v().set_src_prec(Options.src_prec_java);
 
     for (String analysisClass : AnalysisParameters.v().getAnalysisClasses()) {
       SootClass sootClass = Scene.v().loadClassAndSupport(analysisClass);

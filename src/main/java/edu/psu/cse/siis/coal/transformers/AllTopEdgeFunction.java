@@ -18,10 +18,10 @@
  */
 package edu.psu.cse.siis.coal.transformers;
 
-import heros.EdgeFunction;
-import heros.edgefunc.AllBottom;
 import edu.psu.cse.siis.coal.values.BasePropagationValue;
 import edu.psu.cse.siis.coal.values.BottomPropagationValue;
+import heros.EdgeFunction;
+import heros.edgefunc.AllBottom;
 
 /**
  * A customized "all top" edge function as required by the IDE solver. This does not actually have
@@ -39,8 +39,8 @@ public class AllTopEdgeFunction extends AllBottom<BasePropagationValue> {
   }
 
   @Override
-  public EdgeFunction<BasePropagationValue> joinWith(
-      EdgeFunction<BasePropagationValue> otherFunction) {
+  public EdgeFunction<BasePropagationValue>
+      joinWith(EdgeFunction<BasePropagationValue> otherFunction) {
     return otherFunction;
   }
 }

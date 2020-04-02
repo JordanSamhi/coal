@@ -19,15 +19,21 @@
 package edu.psu.cse.siis.coal;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import soot.PackManager;
+import org.jf.dexlib2.DexFileFactory;
+import org.jf.dexlib2.iface.ClassDef;
+import org.jf.dexlib2.iface.DexFile;
+
 import edu.psu.cse.siis.coal.lang.ParseException;
+import soot.PackManager;
 
 /**
  * The high-level pattern for the analysis, including the analysis setup, running the analysis and
@@ -37,7 +43,8 @@ import edu.psu.cse.siis.coal.lang.ParseException;
  * generate field transformers to represent the influence of field operations.</li>
  * <li>{@link #registerArgumentValueAnalyses} to register the argument value analyses that are used
  * to determine the values of method arguments.</li>
- * <li>{@link #registerMethodReturnValueAnalyses} to register analyses for method return values.</li>
+ * <li>{@link #registerMethodReturnValueAnalyses} to register analyses for method return
+ * values.</li>
  * <li>{@link #initializeAnalysis} to initialize the analysis.
  * <li>{@link #processResults} to process the analysis results.
  * <li>{@link #finalizeAnalysis} to finalize the analysis (e.g., closing files).
@@ -155,8 +162,13 @@ public abstract class Analysis<A extends CommandLineArguments> {
    * @throws FatalAnalysisException if a fatal error occurs.
    */
   protected void setApplicationClasses(A commandLineArguments) throws FatalAnalysisException {
-    AnalysisParameters.v().addAnalysisClasses(
-        computeAnalysisClasses(commandLineArguments.getInput()));
+    if (commandLineArguments.hasInput()) {
+      AnalysisParameters.v()
+          .addAnalysisClasses(computeAnalysisClasses(commandLineArguments.getInput()));
+    } else if (commandLineArguments.hasApk()) {
+      AnalysisParameters.v()
+          .addAnalysisClasses(computeAnalysisClasses(commandLineArguments.getApk()));
+    }
     if (commandLineArguments.traverseModeled()) {
       AnalysisParameters.v().addAnalysisClasses(Model.v().getModeledTypes());
     }
@@ -219,13 +231,16 @@ public abstract class Analysis<A extends CommandLineArguments> {
         String directoryString = file.getCanonicalPath();
         int basePos = directoryString.length() + 1;
         return computeAnalysisClassesInDir(file, basePos);
-      } else {
+      } else if (file.getName().endsWith(".jar")) {
         return computeAnalysisClassesInJar(file);
+      } else if (file.getName().endsWith(".apk")) {
+        return computeAnalysisClassesInApk(file);
       }
     } catch (IOException e) {
       e.printStackTrace();
       throw new FatalAnalysisException(e);
     }
+    return null;
   }
 
   /**
@@ -260,6 +275,45 @@ public abstract class Analysis<A extends CommandLineArguments> {
     return result;
   }
 
+  private Set<String> computeAnalysisClassesInApk(File file) throws IOException {
+    Set<String> result = new HashSet<>();
+    Set<JarEntry> dexFiles = new HashSet<JarEntry>();
+
+    JarFile apkFile = new JarFile(file);
+    Enumeration<JarEntry> apkEntries = apkFile.entries();
+
+    while (apkEntries.hasMoreElements()) {
+      JarEntry apkEntry = apkEntries.nextElement();
+      String entryName = apkEntry.getName();
+      if (entryName.endsWith(".dex")) {
+        dexFiles.add(apkEntry);
+      }
+    }
+
+    if (!dexFiles.isEmpty()) {
+      String tmpDir = System.getProperty("java.io.tmpdir");
+      for (JarEntry entry : dexFiles) {
+        File dexTmpFile = new File(tmpDir, entry.getName());
+        InputStream is = apkFile.getInputStream(entry);
+        FileOutputStream fo = new java.io.FileOutputStream(dexTmpFile);
+        while (is.available() > 0) {
+          fo.write(is.read());
+        }
+        fo.close();
+        is.close();
+
+        DexFile dexFile = DexFileFactory.loadDexFile(dexTmpFile, null, null);
+        String className = null;
+        for (ClassDef clazz : dexFile.getClasses()) {
+          className = clazz.getType();
+          result.add(className.substring(1, className.length() - 1).replace('/', '.'));
+        }
+      }
+    }
+    apkFile.close();
+    return result;
+  }
+
   /**
    * Helper for computing the set of classes in a jar file.
    * 
@@ -279,8 +333,10 @@ public abstract class Analysis<A extends CommandLineArguments> {
       String entryName = jarEntry.getName();
       if (entryName.endsWith(".class")) {
         String name = entryName.substring(0, entryName.length() - 6).replace('/', '.');
+        System.out.println(name);
         result.add(name);
       }
+      ;
     }
 
     jarFile.close();

@@ -18,8 +18,6 @@
  */
 package edu.psu.cse.siis.coal.transformers;
 
-import heros.EdgeFunction;
-
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -34,13 +32,14 @@ import edu.psu.cse.siis.coal.values.BasePropagationValue;
 import edu.psu.cse.siis.coal.values.PathValue;
 import edu.psu.cse.siis.coal.values.PropagationValue;
 import edu.psu.cse.siis.coal.values.TopPropagationValue;
+import heros.EdgeFunction;
 
 /**
  * An MVMF constant propagation transformer. This is a set of {@link PathTransformer} elements and
  * therefore it accounts for several execution paths.
  */
-public class PropagationTransformer implements EdgeFunction<BasePropagationValue>,
-    Internable<PropagationTransformer> {
+public class PropagationTransformer
+    implements EdgeFunction<BasePropagationValue>, Internable<PropagationTransformer> {
   private static final Pool<PropagationTransformer> POOL = new Pool<>();
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -76,8 +75,8 @@ public class PropagationTransformer implements EdgeFunction<BasePropagationValue
   }
 
   @Override
-  public EdgeFunction<BasePropagationValue> composeWith(
-      EdgeFunction<BasePropagationValue> secondFunction) {
+  public EdgeFunction<BasePropagationValue>
+      composeWith(EdgeFunction<BasePropagationValue> secondFunction) {
     if (logger.isDebugEnabled()) {
       logger.debug("Composing " + this + " with " + secondFunction);
     }
@@ -105,8 +104,8 @@ public class PropagationTransformer implements EdgeFunction<BasePropagationValue
   }
 
   @Override
-  public EdgeFunction<BasePropagationValue> joinWith(
-      EdgeFunction<BasePropagationValue> otherFunction) {
+  public EdgeFunction<BasePropagationValue>
+      joinWith(EdgeFunction<BasePropagationValue> otherFunction) {
     if (otherFunction instanceof PropagationTransformer) {
       PropagationTransformer result = new PropagationTransformer();
       result.pathTransformers.addAll(this.pathTransformers);
@@ -148,9 +147,8 @@ public class PropagationTransformer implements EdgeFunction<BasePropagationValue
 
   @Override
   public boolean equals(Object other) {
-    return other instanceof PropagationTransformer
-        && Objects.equals(this.pathTransformers,
-            ((PropagationTransformer) other).equals(pathTransformers));
+    return other instanceof PropagationTransformer && Objects.equals(this.pathTransformers,
+        ((PropagationTransformer) other).equals(pathTransformers));
   }
 
   @Override

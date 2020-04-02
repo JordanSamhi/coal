@@ -18,6 +18,8 @@
  */
 package edu.psu.cse.siis.coal;
 
+import java.io.PrintWriter;
+
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 
@@ -31,11 +33,11 @@ public class DefaultCommandLineParser extends CommandLineParser<DefaultCommandLi
 
   @Override
   protected void printHelp(Options options) {
-    HelpFormatter formatter = new HelpFormatter();
+    PrintWriter writer = new PrintWriter(System.out);
+    HelpFormatter helpFormatter = new HelpFormatter();
     System.out.println(COPYRIGHT);
-    formatter.printHelp("coal -input <input directory> -classpath <classpath> "
-        + "-[c]model <[compiled] model directory or files> [-traversemodeled] "
-        + "[-modeledtypesonly] [-threadcount <thread count>]", options);
+    helpFormatter.printHelp(writer, 100, "coal", "", options, 5, 5, "", true);
+    writer.flush();
   }
 
 }
